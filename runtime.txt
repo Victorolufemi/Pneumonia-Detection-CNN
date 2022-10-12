@@ -1,2 +1,1 @@
 python-3.9.15
-itsdangerous==2.0.1

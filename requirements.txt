@@ -1,4 +1,4 @@
 Flask==1.1.2
 Flask-RESTful==0.3.8
 tensorflow-cpu
-opencv
+opencv-python==4.6.0.66

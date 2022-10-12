@@ -60,6 +60,7 @@ def upload():
             classification = 'The Patient has a pneumonia Disease, Kindly go the nearest Hospital for checkup'
 
         return render_template('index.html',classification=classification, file=local_file_path)
+port = int(os.environ.get('PORT'))
 
 if __name__== '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=port)

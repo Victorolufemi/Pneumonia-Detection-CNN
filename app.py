@@ -2,6 +2,7 @@ from keras.models import load_model
 from keras.models import model_from_json
 from flask import Flask,url_for,render_template,redirect,session,Response
 import os
+from os import listdir, environ
 import cv2
 from flask import Flask, request, render_template
 from keras.models import load_model
@@ -63,4 +64,4 @@ def upload():
 port = int(os.environ.get('PORT'))
 
 if __name__== '__main__':
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True,host='0.0.0.0',port=int(environ.get('PORT', 8080)))

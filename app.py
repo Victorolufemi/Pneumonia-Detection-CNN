@@ -31,13 +31,13 @@ img_size= 150
 def predict(sample, model):
     # Some preprocessing
     img = cv2.imread(sample)
-    img = cv2.resize(img,(img_size, img_size),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+    img = cv2.resize(img,(img_size, img_size))
     #img =img.reshape(-1, img_size, img_size, 1)
-    img = np.array(img).reshape(1, 150, 150, 1)
+    img = img.reshape(-1, img_size, img_size, 1)
     predicts = (model.predict(img)> 0.5).astype("int32")
     prediction = predicts.reshape(1,-1)[0]
 # this will be an array with one element
-    return prediction
+    return prediction[0]
 @app.route('/predict', methods=['GET', 'POST'])
 def upload():
     if request.method == 'GET':

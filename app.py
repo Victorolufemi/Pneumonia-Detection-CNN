@@ -1,77 +1,65 @@
 from keras.models import load_model
 from keras.models import model_from_json
 from flask import Flask,url_for,render_template,redirect,session,Response
-from flask_wtf import FlaskForm
-from wtforms import FileField,SubmitField
-from flask_wtf.file import file_allowed,file_required
-from werkzeug.utils import secure_filename
-import cv2
-import numpy
 import os
+import cv2
+from flask import Flask, request, render_template
+from keras.models import load_model
+import numpy as np
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-
-class Detect_form(FlaskForm):
-    style={'class': 'form-control'}
-    image = FileField("",validators=[file_required(), file_allowed(['jpg','png','jpeg'],'Images Only!')],render_kw=style)
-    submit = SubmitField("Analyze", render_kw={'class': 'btn btn-######'})
-
-
-
+app.config['DEBUG'] = True
 # load json and create model
 json_file = open('models/model.json', 'r')
 loaded_model_json = json_file.read()
 json_file.close()
 loaded_model = model_from_json(loaded_model_json)
 # load weights into new model
-loaded_model.load_weights("model/model.h5")
+loaded_model.load_weights("models/model.h5")
 
-#Create the predict function
-img_size = 150
-def predict(model,sample):
-    img = cv2.imread(sample)
-    img = cv2.resize(img,(img_size, img_size))
-    predicts = (model.predict(img)> 0.5).astype("int32")
-    predictions = predicts.reshape(1,-1)[0]
-    return predictions
-
-
-def classify(value):
-    if value==0:
+def output_string(classification):
+    if classification == 0:
         return 'The Patient has no Pneumonia Disease'
-    elif value==1:
+    else:
         return 'The Patient has a pneumonia Disease, Kindly go the nearest Hospital for checkup'
 
+@app.route('/')
+def home():
+    return render_template('index.html')
+img_size= 150
+def predict(sample, model):
+    # Some preprocessing
+    img = cv2.imread(sample)
+    img = cv2.resize(img,(img_size, img_size),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+    #img =img.reshape(-1, img_size, img_size, 1)
+    img = np.array(img).reshape(1, 150, 150, 1)
+    predicts = (model.predict(img)> 0.5).astype("int32")
+    prediction = predicts.reshape(1,-1)[0]
+# this will be an array with one element
+    return prediction
+@app.route('/predict', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'GET':
+        render_template('index.html')
+    if request.method == 'POST':
+        # Get the file from post request
+        f = request.files['pneumonia']
 
-x=0
+        # Save the file to ./uploads
+        basepath = os.path.dirname(__file__)
+        file_path = os.path.join(
+            basepath, 'static/uploads', secure_filename(f.filename))
+        f.save(file_path)
+        local_file_path = '/static/uploads/' + f.filename;
+        prediction = predict(file_path, loaded_model)
+        classification = ""
+        if prediction == 0:
+            classification = 'The Patient has no Pneumonia Disease'
+        else:
+            classification = 'The Patient has a pneumonia Disease, Kindly go the nearest Hospital for checkup'
 
-@app.route('/', methods=['GET','POST'])
-
-def index():
-    form = Detect_form()
-
-    if form.validate_on_submit():
-
-        assets_dir = './static'
-        imgs =form.image.data
-        img_name = secure_filename(imgs.filename)
-
-        img.save(os.path.join(assets_dir,img_name))
-        global x
-        x = os.path.join(assets_dir, img_name)
-
-        return redirect(url_for('prediction'))
-    return render_template('home.html', form=form)
-
-@app.route('/result')
-def prediction():
-
-    pred_val = predict(loaded_model, x)
-    result = classify(pred_val)
-    os.remove(x)
-    return render_template('prediction.html', result=result)
-
+        return render_template('index.html',classification=classification, file=local_file_path)
 
 if __name__== '__main__':
     app.run()
-
